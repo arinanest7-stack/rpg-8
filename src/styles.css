@@ -1,0 +1,192 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-xp: var(--xp);
+  --color-gold: var(--gold);
+  --color-violet: var(--violet);
+  --color-magenta: var(--magenta);
+  --color-cyan: var(--cyan);
+  --font-display: "Cinzel", "Georgia", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --radius: 0.875rem;
+
+  /* Deep dark emerald & gold RPG palette (League-of-Legends aesthetic) */
+  --background: oklch(0.12 0.04 160);
+  --foreground: oklch(0.92 0.03 85);
+
+  --card: oklch(0.16 0.04 160);
+  --card-foreground: oklch(0.92 0.03 85);
+
+  --popover: oklch(0.14 0.04 160);
+  --popover-foreground: oklch(0.92 0.03 85);
+
+  /* Gold primary */
+  --primary: oklch(0.80 0.12 85);
+  --primary-foreground: oklch(0.12 0.04 160);
+
+  --secondary: oklch(0.22 0.04 160);
+  --secondary-foreground: oklch(0.92 0.03 85);
+
+  --muted: oklch(0.24 0.03 160);
+  --muted-foreground: oklch(0.72 0.04 90);
+
+  /* Emerald / Teal accent */
+  --accent: oklch(0.75 0.16 170);
+  --accent-foreground: oklch(0.12 0.04 160);
+
+  --destructive: oklch(0.6 0.18 25);
+  --destructive-foreground: oklch(0.99 0.01 270);
+
+  --border: oklch(0.80 0.12 85 / 30%);
+  --input: oklch(0.80 0.12 85 / 25%);
+  --ring: oklch(0.80 0.12 85);
+
+  /* Gamified RPG accents */
+  --xp: oklch(0.75 0.16 170);
+  --gold: oklch(0.80 0.12 85);
+  --violet: oklch(0.68 0.14 280);
+  --magenta: oklch(0.65 0.16 340);
+  --cyan: oklch(0.75 0.16 170);
+  --char-glow: oklch(0.78 0.16 170);
+
+  --gradient-hero: linear-gradient(180deg, #050f0a 0%, #07150e 100%);
+  --gradient-card: linear-gradient(160deg, oklch(0.18 0.04 160 / 0.85), oklch(0.13 0.04 160 / 0.85));
+  --gradient-xp: linear-gradient(90deg, #00f0b5, #10b981);
+  --gradient-gold: linear-gradient(90deg, #dfb86c, #c89b3c);
+
+  --shadow-glow: 0 0 24px -4px oklch(0.80 0.12 85 / 0.35);
+  --shadow-card: 0 16px 40px -16px oklch(0 0 0 / 0.8);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    background: #06120b;
+    color: var(--color-foreground);
+    min-height: 100vh;
+    font-family: "Inter", sans-serif;
+  }
+}
+
+@utility panel {
+  background: var(--gradient-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
+}
+
+@utility glow-ring {
+  box-shadow: var(--shadow-glow);
+}
+
+@utility label-mono {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  color: var(--color-muted-foreground);
+}
+
+/* ---------- Character sheet & Realm Dark Scope ---------- */
+.realm-dark {
+  --background: oklch(0.12 0.04 160);
+  --foreground: oklch(0.92 0.03 85);
+  --card: oklch(0.16 0.04 160);
+  --card-foreground: oklch(0.92 0.03 85);
+  --popover: oklch(0.14 0.04 160);
+  --popover-foreground: oklch(0.92 0.03 85);
+  --primary: oklch(0.80 0.12 85);
+  --primary-foreground: oklch(0.12 0.04 160);
+  --secondary: oklch(0.22 0.04 160);
+  --secondary-foreground: oklch(0.92 0.03 85);
+  --muted: oklch(0.24 0.03 160);
+  --muted-foreground: oklch(0.72 0.04 90);
+  --accent: oklch(0.75 0.16 170);
+  --accent-foreground: oklch(0.12 0.04 160);
+  --border: oklch(0.80 0.12 85 / 30%);
+  --input: oklch(0.80 0.12 85 / 25%);
+  --ring: oklch(0.80 0.12 85);
+  --gold: oklch(0.80 0.12 85);
+  --char-glow: oklch(0.78 0.16 170);
+}
+
+@utility rune-frame {
+  position: relative;
+  border: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
+  background: linear-gradient(
+    145deg,
+    color-mix(in oklab, var(--card) 85%, transparent),
+    color-mix(in oklab, var(--background) 90%, transparent)
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--gold) 28%, transparent),
+    0 24px 60px -28px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(14px);
+}
+
+@utility rune-tab {
+  position: relative;
+  font-family: var(--font-display);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  clip-path: polygon(
+    14px 0,
+    calc(100% - 14px) 0,
+    100% 50%,
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 50%
+  );
+  transition: all 200ms ease;
+}
+
+@utility gold-rule {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--gold) 65%, transparent),
+    transparent
+  );
+}
+
+/* Hexagon node shapes */
+.hex-clip {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
