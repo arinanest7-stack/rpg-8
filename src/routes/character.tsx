@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Copy, Map, Swords, Sparkles, User } from "lucide-react";
+import { useState, useRef } from "react";
+import { Copy, Upload, Link as LinkIcon, RotateCcw, Check, Sparkles, Image as ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -9,10 +10,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import portrait from "@/assets/character-portrait.jpg";
+import heroAvatar from "@/assets/hero-avatar.jpg";
 import backdrop from "@/assets/realm-backdrop.jpg";
 import { ArcaneOverlay } from "@/components/character/ArcaneOverlay";
-
 import { TopNav } from "@/components/ui/TopNav";
+import { useStudyStore } from "@/hooks/useStudyStore";
 
 export const Route = createFileRoute("/character")({
   head: () => ({
@@ -21,7 +23,7 @@ export const Route = createFileRoute("/character")({
       {
         name: "description",
         content:
-          "Shape your study companion: choose appearance and personality traits, then copy the generated character prompt.",
+          "Shape your study companion: choose appearance and personality traits, upload custom avatar pictures, and copy the generated character prompt.",
       },
       { property: "og:title", content: "Character Settings — Forge Your Avatar" },
       {
@@ -56,7 +58,54 @@ const PERSONALITY: { label: string; options: string[] }[] = [
 
 function CharacterSettings() {
   const [tab, setTab] = useState<"appearance" | "personality">("appearance");
+  const { avatarUrl, setAvatarUrl } = useStudyStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [tempUrl, setTempUrl] = useState("");
+
+  const activeAvatar = avatarUrl || portrait;
   const rows = tab === "appearance" ? APPEARANCE : PERSONALITY;
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setAvatarUrl(result);
+        toast.success("Avatar image updated! Synced with Main Page.");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tempUrl.trim()) return;
+
+    setAvatarUrl(tempUrl.trim());
+    setTempUrl("");
+    setShowUrlInput(false);
+    toast.success("Avatar image updated from URL! Synced with Main Page.");
+  };
+
+  const handleSelectPreset = (url: string) => {
+    setAvatarUrl(url);
+    toast.success("Preset avatar selected! Synced with Main Page.");
+  };
+
+  const handleResetAvatar = () => {
+    setAvatarUrl("");
+    toast.info("Reset to default character avatar.");
+  };
 
   return (
     <main className="realm-dark relative min-h-screen overflow-hidden bg-background text-foreground">
@@ -130,27 +179,156 @@ function CharacterSettings() {
           </button>
         </section>
 
-        {/* Right: character portrait */}
-        <aside className="lg:sticky lg:top-10">
-          <div className="rune-frame relative overflow-hidden rounded-2xl">
-            <div className="relative aspect-[4/5] w-full">
+        {/* Right: character portrait & avatar editor controls */}
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-10">
+          <div className="rune-frame group relative overflow-hidden rounded-2xl border border-primary/40 bg-card/60 p-2 shadow-2xl backdrop-blur-md">
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl">
               <img
-                src={portrait}
+                src={activeAvatar}
                 alt="Full-body illustration of the selected fantasy character"
                 width={1024}
                 height={1536}
-                className="h-full w-full object-cover object-[50%_18%]"
+                className="h-full w-full object-cover object-[50%_18%] transition duration-500 group-hover:scale-105"
               />
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_60%,color-mix(in_oklab,var(--background)_85%,transparent))]" />
+
+              {/* Upload Hover Overlay */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 cursor-pointer backdrop-blur-xs"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-primary bg-black/80 text-primary shadow-[0_0_20px_rgba(200,170,110,0.5)]">
+                  <Upload className="h-6 w-6" />
+                </div>
+                <span className="font-display text-xs uppercase tracking-widest text-primary drop-shadow">
+                  Upload Custom Image
+                </span>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  Click to select file
+                </span>
+              </div>
             </div>
+
+            {/* Corner runic accents */}
             <span className="pointer-events-none absolute left-3 top-3 h-6 w-6 border-l border-t border-primary/60" />
             <span className="pointer-events-none absolute right-3 top-3 h-6 w-6 border-r border-t border-primary/60" />
             <span className="pointer-events-none absolute bottom-3 left-3 h-6 w-6 border-b border-l border-primary/60" />
             <span className="pointer-events-none absolute bottom-3 right-3 h-6 w-6 border-b border-r border-primary/60" />
           </div>
-          <div className="mt-3 flex items-center justify-between font-mono text-[0.62rem] uppercase tracking-[0.28em] text-muted-foreground/80">
-            <span>Avatar Render</span>
-            <span className="text-primary/80">v.01</span>
+
+          {/* Hidden File Input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="image/*"
+            className="hidden"
+          />
+
+          {/* Avatar Toolbar & Presets */}
+          <div className="rounded-xl border border-primary/30 bg-black/70 p-4 backdrop-blur-md flex flex-col gap-3">
+            <div className="flex items-center justify-between font-mono text-[0.65rem] uppercase tracking-[0.2em] text-primary">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> Character Portrait Controls
+              </span>
+              <span className="text-muted-foreground text-[9px] bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                Synced to Main Page
+              </span>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="rune-tab flex items-center justify-center gap-2 border border-primary/40 bg-card/80 px-3 py-2 text-xs font-mono uppercase tracking-wider text-foreground transition hover:border-primary hover:bg-primary/20 hover:text-primary"
+              >
+                <Upload className="h-3.5 w-3.5 text-primary" />
+                Upload Picture
+              </button>
+
+              <button
+                onClick={() => setShowUrlInput(!showUrlInput)}
+                className="rune-tab flex items-center justify-center gap-2 border border-primary/40 bg-card/80 px-3 py-2 text-xs font-mono uppercase tracking-wider text-foreground transition hover:border-primary hover:bg-primary/20 hover:text-primary"
+              >
+                <LinkIcon className="h-3.5 w-3.5 text-primary" />
+                Paste Image URL
+              </button>
+            </div>
+
+            {/* URL Input Form (toggled) */}
+            {showUrlInput && (
+              <form onSubmit={handleUrlSubmit} className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://example.com/character.jpg"
+                  value={tempUrl}
+                  onChange={(e) => setTempUrl(e.target.value)}
+                  className="flex-1 rounded-lg border border-primary/40 bg-background/80 px-3 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  className="rounded-lg border border-primary/60 bg-primary/20 px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-primary hover:bg-primary/40"
+                >
+                  Save
+                </button>
+              </form>
+            )}
+
+            {/* Preset Avatar Selection */}
+            <div className="flex items-center justify-between pt-1 border-t border-border/40">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Presets:
+              </span>
+
+              <div className="flex items-center gap-2">
+                {/* Preset 1 */}
+                <button
+                  onClick={() => handleSelectPreset(portrait)}
+                  className={`relative h-10 w-10 overflow-hidden rounded-lg border transition ${
+                    activeAvatar === portrait
+                      ? "border-primary ring-2 ring-primary/50 scale-105"
+                      : "border-primary/30 opacity-70 hover:opacity-100 hover:border-primary"
+                  }`}
+                  title="Verdant Elf Portrait"
+                >
+                  <img src={portrait} alt="Elf" className="h-full w-full object-cover" />
+                  {activeAvatar === portrait && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-primary drop-shadow" />
+                    </div>
+                  )}
+                </button>
+
+                {/* Preset 2 */}
+                <button
+                  onClick={() => handleSelectPreset(heroAvatar)}
+                  className={`relative h-10 w-10 overflow-hidden rounded-lg border transition ${
+                    activeAvatar === heroAvatar
+                      ? "border-primary ring-2 ring-primary/50 scale-105"
+                      : "border-primary/30 opacity-70 hover:opacity-100 hover:border-primary"
+                  }`}
+                  title="Ranger Hero"
+                >
+                  <img src={heroAvatar} alt="Ranger" className="h-full w-full object-cover" />
+                  {activeAvatar === heroAvatar && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-primary drop-shadow" />
+                    </div>
+                  )}
+                </button>
+
+                {/* Reset button */}
+                {avatarUrl && (
+                  <button
+                    onClick={handleResetAvatar}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-background/50 text-muted-foreground transition hover:border-destructive hover:text-destructive"
+                    title="Reset to Default"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </aside>
       </div>

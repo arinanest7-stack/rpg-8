@@ -37,11 +37,13 @@ export interface CharacterStats {
   xpMax: number;
   gold: number;
   streak: number;
+  avatarUrl?: string;
 }
 
 const STORAGE_KEY_CONTAINERS = "study_realm_containers_v4";
 const STORAGE_KEY_TEMPLATES = "study_realm_custom_templates_v4";
 const STORAGE_KEY_STATS = "study_realm_character_stats_v4";
+const STORAGE_KEY_AVATAR = "study_realm_character_avatar_v1";
 
 const createDefaultSteps = (): StepData[] => [
   {
@@ -286,6 +288,30 @@ export function useStudyStore() {
       };
     });
   }, []);
+  const [avatarUrl, setAvatarUrlState] = useState<string>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY_AVATAR) || "";
+    } catch {
+      return "";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (avatarUrl) {
+        localStorage.setItem(STORAGE_KEY_AVATAR, avatarUrl);
+      } else {
+        localStorage.removeItem(STORAGE_KEY_AVATAR);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [avatarUrl]);
+
+  const setAvatarUrl = useCallback((url: string) => {
+    setAvatarUrlState(url);
+    setStats((prev) => ({ ...prev, avatarUrl: url }));
+  }, []);
 
   const saveCustomTemplate = useCallback((name: string, description: string, blocks: SectionBlock[]) => {
     const newTpl: StepTemplate = {
@@ -310,6 +336,8 @@ export function useStudyStore() {
     setContainers: updateContainers,
     stats,
     setStats,
+    avatarUrl,
+    setAvatarUrl,
     updateStep,
     completeStep,
     saveCustomTemplate,

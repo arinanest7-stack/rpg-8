@@ -10,7 +10,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { stats } = useStudyStore();
+  const { stats, avatarUrl } = useStudyStore();
+  const currentAvatar = avatarUrl || heroAvatar;
 
   return (
     <main className="realm-dark relative flex min-h-screen flex-col items-center justify-between overflow-hidden bg-background px-4 py-8 text-foreground select-none">
@@ -56,7 +57,7 @@ function Index() {
 
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
               <img
-                src={heroAvatar}
+                src={currentAvatar}
                 alt="Lyra Duskwind"
                 className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105"
               />
