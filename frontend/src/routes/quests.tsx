@@ -62,74 +62,6 @@ export interface Quest {
   done: boolean;
 }
 
-const DEFAULT_QUEST_DATABASE: Quest[] = [
-  {
-    id: "q-1",
-    skillTitle: "Lectura i Comprensió",
-    text: "Anàlisi de Textos Argumentatius — Identifica la tesi central i 3 arguments secundaris en un text d'opinió.",
-    difficulty: "Medium",
-    xp: 25,
-    gold: 10,
-    done: false,
-  },
-  {
-    id: "q-2",
-    skillTitle: "Lectura i Comprensió",
-    text: "Vocabulari en Context — Dedueix el significat de 5 paraules desconegudes segons el context de la lectura.",
-    difficulty: "Easy",
-    xp: 15,
-    gold: 5,
-    done: true,
-  },
-  {
-    id: "q-3",
-    skillTitle: "Lectura i Comprensió",
-    text: "Síntesi de Capítol — Escriu un resum de 4 línies del primer capítol de lectura.",
-    difficulty: "Medium",
-    xp: 20,
-    gold: 10,
-    done: false,
-  },
-  {
-    id: "q-4",
-    skillTitle: "Gramàtica Avançada",
-    text: "Domini del Subjuntiu — Completa 10 frases utilitzant correctament les formes del subjuntiu.",
-    difficulty: "Medium",
-    xp: 30,
-    gold: 15,
-    done: false,
-  },
-  {
-    id: "q-5",
-    skillTitle: "Gramàtica Avançada",
-    text: "Pronoms Febles Complexes — Resol 5 exercicis de combinació de dos pronoms febles sense errors.",
-    difficulty: "Epic",
-    xp: 50,
-    gold: 25,
-    done: false,
-  },
-  {
-    id: "q-6",
-    skillTitle: "Vocabulari & Ortoepia",
-    text: "Accentuar Dialectes — Revisa les regles d'accentuació oberta i tancada en el vocabulari central.",
-    difficulty: "Easy",
-    xp: 15,
-    gold: 5,
-    done: true,
-  },
-  {
-    id: "q-7",
-    skillTitle: "Vocabulari & Ortoepia",
-    text: "Connectors Textuals — Classifica 15 connectors segons la seua funció (oposició, causa, conseqüència).",
-    difficulty: "Medium",
-    xp: 25,
-    gold: 10,
-    done: false,
-  },
-];
-
-const STORAGE_KEY_QUESTS = "study_realm_quests_database_v4";
-
 const MENU = [
   { icon: Map, label: "Journey", to: "/journey" as const },
   { icon: Swords, label: "Practice", to: "/hub" as const },
@@ -141,21 +73,12 @@ const MENU = [
 ];
 
 function QuestLibraryPage() {
-  const { containers, setStats } = useStudyStore();
-  const [quests, setQuests] = useState<Quest[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_QUESTS);
-      return saved ? JSON.parse(saved) : DEFAULT_QUEST_DATABASE;
-    } catch {
-      return DEFAULT_QUEST_DATABASE;
-    }
-  });
-
+  const { containers, quests, addQuest, toggleQuestDone, deleteQuest } = useStudyStore();
   const [search, setSearch] = useState("");
   const [collapsedSkills, setCollapsedSkills] = useState<Record<string, boolean>>({});
 
   // Quest Edit / Add Modal state
-  const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
+  const [editingQuest, setEditingQuest] = useState<QuestItem | null>(null);
   const [isNewQuest, setIsNewQuest] = useState(false);
   const [formSkillTitle, setFormSkillTitle] = useState("");
   const [formText, setFormText] = useState("");
@@ -163,44 +86,43 @@ function QuestLibraryPage() {
   const [formXp, setFormXp] = useState(25);
   const [formGold, setFormGold] = useState(10);
 
-  // Extract all existing character skills dynamically
+  // Extract all existing character skills dynamically from containers
   const availableSkills = useMemo(() => {
-    const skillsSet = new Set<string>();
+    return containers.map((c) => c.title);
+  }, [containers]);
+
+  // Dynamically group custom quests by active containers in useStudyStore
+  const skillsGrouped = useMemo(() => {
+    const map: Record<string, { containerId: string; skillTitle: string; quests: QuestItem[] }> = {};
+
     containers.forEach((c) => {
-      c.topics.forEach((t) => skillsSet.add(t.title));
-      c.sections.forEach((s) => {
-        skillsSet.add(s.title);
-        s.topics.forEach((t) => skillsSet.add(t.title));
-      });
+      const skillTitle = c.title;
+      const skillQuests = quests.filter(
+        (q) => q.containerId === c.id || q.skillTitle.toLowerCase() === c.title.toLowerCase(),
+      );
+
+      const filtered = skillQuests.filter(
+        (q) =>
+          q.text.toLowerCase().includes(search.toLowerCase()) ||
+          q.skillTitle.toLowerCase().includes(search.toLowerCase()),
+      );
+
+      map[skillTitle] = {
+        containerId: c.id,
+        skillTitle,
+        quests: filtered,
+      };
     });
-    quests.forEach((q) => skillsSet.add(q.skillTitle));
-    if (skillsSet.size === 0) {
-      skillsSet.add("Lectura i Comprensió");
-      skillsSet.add("Gramàtica Avançada");
-      skillsSet.add("Vocabulari & Ortoepia");
-    }
-    return Array.from(skillsSet);
-  }, [containers, quests]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_QUESTS, JSON.stringify(quests));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [quests]);
+    return map;
+  }, [containers, quests, search]);
 
-  const filteredQuests = quests.filter(
-    (q) =>
-      q.text.toLowerCase().includes(search.toLowerCase()) ||
-      q.skillTitle.toLowerCase().includes(search.toLowerCase()),
-  );
+  const allFlatQuests = useMemo(() => {
+    return Object.values(skillsGrouped).flatMap((g) => g.quests);
+  }, [skillsGrouped]);
 
-  const skillsGrouped = filteredQuests.reduce<Record<string, Quest[]>>((acc, quest) => {
-    if (!acc[quest.skillTitle]) acc[quest.skillTitle] = [];
-    acc[quest.skillTitle].push(quest);
-    return acc;
-  }, {});
+  const totalQuests = allFlatQuests.length;
+  const completedCount = allFlatQuests.filter((q) => q.done).length;
 
   const toggleSkillCollapse = (skillTitle: string) => {
     setCollapsedSkills((prev) => ({
@@ -221,31 +143,11 @@ function QuestLibraryPage() {
   };
 
   const toggleQuestCompletion = (questId: string) => {
-    setQuests((prev) =>
-      prev.map((q) => {
-        if (q.id === questId) {
-          const nextDone = !q.done;
-          if (nextDone) {
-            setStats((st) => {
-              const nextXp = st.xp + q.xp;
-              const leveledUp = nextXp >= st.xpMax;
-              return {
-                ...st,
-                xp: leveledUp ? nextXp - st.xpMax : nextXp,
-                level: leveledUp ? st.level + 1 : st.level,
-                gold: st.gold + q.gold,
-              };
-            });
-          }
-          return { ...q, done: nextDone };
-        }
-        return q;
-      }),
-    );
+    toggleQuestDone(questId);
   };
 
   const openAddQuestModal = (defaultSkill?: string) => {
-    const targetSkill = defaultSkill || availableSkills[0] || "Lectura i Comprensió";
+    const targetSkill = defaultSkill || availableSkills[0] || "General Skill";
     setIsNewQuest(true);
     setFormSkillTitle(targetSkill);
     setFormText("");
@@ -254,6 +156,7 @@ function QuestLibraryPage() {
     setFormGold(10);
     setEditingQuest({
       id: Math.random().toString(36).slice(2, 10),
+      containerId: containers.find((c) => c.title === targetSkill)?.id || containers[0]?.id || "c-1",
       skillTitle: targetSkill,
       text: "",
       difficulty: "Medium",
@@ -263,7 +166,7 @@ function QuestLibraryPage() {
     });
   };
 
-  const openEditQuestModal = (quest: Quest) => {
+  const openEditQuestModal = (quest: QuestItem) => {
     setIsNewQuest(false);
     setFormSkillTitle(quest.skillTitle);
     setFormText(quest.text);
@@ -274,32 +177,25 @@ function QuestLibraryPage() {
   };
 
   const handleSaveQuest = () => {
-    if (!editingQuest || !formText.trim()) return;
+    if (!formText.trim()) return;
 
-    const updated: Quest = {
-      ...editingQuest,
-      skillTitle: formSkillTitle.trim() || "General",
-      text: formText.trim(),
-      difficulty: formDifficulty,
-      xp: Number(formXp) || 25,
-      gold: Number(formGold) || 10,
-    };
-
-    if (isNewQuest) {
-      setQuests((prev) => [updated, ...prev]);
-    } else {
-      setQuests((prev) => prev.map((q) => (q.id === updated.id ? updated : q)));
+    const targetContainer = containers.find((c) => c.title === formSkillTitle) || containers[0];
+    if (targetContainer) {
+      addQuest(
+        targetContainer.id,
+        targetContainer.title,
+        formText.trim(),
+        formDifficulty,
+        Number(formXp) || 25,
+        Number(formGold) || 10,
+      );
     }
-
     setEditingQuest(null);
   };
 
   const handleDeleteQuest = (questId: string) => {
-    setQuests((prev) => prev.filter((q) => q.id !== questId));
+    deleteQuest(questId);
   };
-
-  const totalQuests = quests.length;
-  const completedCount = quests.filter((q) => q.done).length;
 
   return (
     <div className="realm-dark relative min-h-screen bg-[#06120b] text-foreground select-none">
@@ -390,7 +286,8 @@ function QuestLibraryPage() {
                 No quests found matching your filter.
               </div>
             ) : (
-              Object.entries(skillsGrouped).map(([skillTitle, skillQuests]) => {
+              Object.entries(skillsGrouped).map(([skillTitle, group]) => {
+                const skillQuests = group.quests;
                 const isCollapsed = Boolean(collapsedSkills[skillTitle]);
                 const doneSkillCount = skillQuests.filter((q) => q.done).length;
 
@@ -439,7 +336,7 @@ function QuestLibraryPage() {
                           <div
                             className="h-full rounded-full bg-[linear-gradient(90deg,var(--accent),var(--primary))] transition-all"
                             style={{
-                              width: `${(doneSkillCount / skillQuests.length) * 100}%`,
+                              width: skillQuests.length > 0 ? `${(doneSkillCount / skillQuests.length) * 100}%` : "0%",
                             }}
                           />
                         </div>
@@ -449,7 +346,19 @@ function QuestLibraryPage() {
                     {/* Quests List under Skill - Unified Single Line cards */}
                     {!isCollapsed && (
                       <div className="p-4 flex flex-col gap-3 border-t border-border/40 bg-background/30">
-                        {skillQuests.map((quest) => (
+                        {skillQuests.length === 0 ? (
+                          <div className="py-6 px-4 text-center text-xs font-mono text-muted-foreground flex flex-col items-center justify-center gap-2.5">
+                            <span>No quests created yet for <strong className="text-primary uppercase tracking-wider">{skillTitle}</strong>.</span>
+                            <button
+                              onClick={() => openAddQuestModal(skillTitle)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/50 bg-primary/15 px-3.5 py-1.5 text-primary hover:bg-primary/30 transition text-xs font-mono uppercase tracking-wider"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Add First Quest</span>
+                            </button>
+                          </div>
+                        ) : (
+                          skillQuests.map((quest) => (
                           <div
                             key={quest.id}
                             className={cn(
@@ -541,7 +450,7 @@ function QuestLibraryPage() {
                               </button>
                             </div>
                           </div>
-                        ))}
+                        )))}
                       </div>
                     )}
                   </div>

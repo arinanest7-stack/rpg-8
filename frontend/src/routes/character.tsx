@@ -1,6 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useRef } from "react";
-import { Copy, Upload, Link as LinkIcon, RotateCcw, Check, Sparkles, Image as ImageIcon } from "lucide-react";
+import {
+  Copy,
+  Upload,
+  Link as LinkIcon,
+  RotateCcw,
+  Check,
+  Sparkles,
+  Image as ImageIcon,
+  Swords,
+  Coins,
+  Flame,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -13,8 +25,14 @@ import portrait from "@/assets/character-portrait.jpg";
 import heroAvatar from "@/assets/hero-avatar.jpg";
 import backdrop from "@/assets/realm-backdrop.jpg";
 import { ArcaneOverlay } from "@/components/character/ArcaneOverlay";
+import { PromptModal } from "@/components/character/PromptModal";
 import { TopNav } from "@/components/ui/TopNav";
 import { useStudyStore } from "@/hooks/useStudyStore";
+import {
+  CharacterAppearanceTraits,
+  CharacterPersonalityTraits,
+  generateCharacterPrompt,
+} from "@/lib/promptGenerator";
 
 export const Route = createFileRoute("/character")({
   head: () => ({
@@ -58,7 +76,15 @@ const PERSONALITY: { label: string; options: string[] }[] = [
 
 function CharacterSettings() {
   const [tab, setTab] = useState<"appearance" | "personality">("appearance");
-  const { avatarUrl, setAvatarUrl } = useStudyStore();
+  const {
+    avatarUrl,
+    setAvatarUrl,
+    stats,
+    appearance,
+    updateAppearance,
+    personality,
+    updatePersonality,
+  } = useStudyStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -66,6 +92,98 @@ function CharacterSettings() {
 
   const activeAvatar = avatarUrl || portrait;
   const rows = tab === "appearance" ? APPEARANCE : PERSONALITY;
+
+  const handleSelectTrait = (label: string, value: string) => {
+    if (tab === "appearance") {
+      const keyMap: Record<string, keyof CharacterAppearanceTraits> = {
+        Gender: "gender",
+        Age: "age",
+        Hair: "hair",
+        "Hair Colour": "hairColour",
+        "Eye Colour": "eyeColour",
+        "Cloth style": "clothStyle",
+        "Cloth Colour": "clothColour",
+      };
+      const key = keyMap[label];
+      if (key) {
+        updateAppearance({ [key]: value });
+      }
+    } else {
+      const keyMap: Record<string, keyof CharacterPersonalityTraits> = {
+        Temperament: "temperament",
+        Voice: "voice",
+        Motivation: "motivation",
+        Flaw: "flaw",
+        Companion: "companion",
+        Aura: "aura",
+      };
+      const key = keyMap[label];
+      if (key) {
+        updatePersonality({ [key]: value });
+      }
+    }
+  };
+
+  const getTraitValue = (label: string) => {
+    if (tab === "appearance") {
+      const keyMap: Record<string, keyof CharacterAppearanceTraits> = {
+        Gender: "gender",
+        Age: "age",
+        Hair: "hair",
+        "Hair Colour": "hairColour",
+        "Eye Colour": "eyeColour",
+        "Cloth style": "clothStyle",
+        "Cloth Colour": "clothColour",
+      };
+      const key = keyMap[label];
+      return (key && appearance ? appearance[key] : "") || "";
+    } else {
+      const keyMap: Record<string, keyof CharacterPersonalityTraits> = {
+        Temperament: "temperament",
+        Voice: "voice",
+        Motivation: "motivation",
+        Flaw: "flaw",
+        Companion: "companion",
+        Aura: "aura",
+      };
+      const key = keyMap[label];
+      return (key && personality ? personality[key] : "") || "";
+    }
+  };
+
+  const compressImage = (dataUrl: string, callback: (compressed: string) => void) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxDim = 600;
+      let width = img.width;
+      let height = img.height;
+      if (width > height) {
+        if (width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        }
+      } else {
+        if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL("image/jpeg", 0.85);
+        callback(compressed);
+      } else {
+        callback(dataUrl);
+      }
+    };
+    img.onerror = () => callback(dataUrl);
+    img.src = dataUrl;
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,8 +198,10 @@ function CharacterSettings() {
     reader.onload = (event) => {
       const result = event.target?.result as string;
       if (result) {
-        setAvatarUrl(result);
-        toast.success("Avatar image updated! Synced with Main Page.");
+        compressImage(result, (compressed) => {
+          setAvatarUrl(compressed);
+          toast.success("✨ New character photo uploaded & saved! Maintained on Home & all pages.");
+        });
       }
     };
     reader.readAsDataURL(file);
@@ -130,6 +250,7 @@ function CharacterSettings() {
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-5 py-10 lg:min-h-[calc(100vh-7rem)] md:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         {/* Left: traits table */}
         <section className="flex flex-col gap-6">
+
           <div className="grid grid-cols-2 gap-4 sm:max-w-md">
             {(["appearance", "personality"] as const).map((t) => (
               <button
@@ -156,7 +277,10 @@ function CharacterSettings() {
                   <span className="min-w-0 truncate font-display text-base tracking-wide text-foreground/90">
                     {row.label}
                   </span>
-                  <Select>
+                  <Select
+                    value={getTraitValue(row.label)}
+                    onValueChange={(val) => handleSelectTrait(row.label, val)}
+                  >
                     <SelectTrigger className="h-10 w-40 shrink-0 rounded-lg border-primary/30 bg-background/50 font-mono text-xs uppercase tracking-widest text-muted-foreground hover:border-primary/60 sm:w-52">
                       <SelectValue placeholder="Choose…" />
                     </SelectTrigger>
@@ -173,15 +297,28 @@ function CharacterSettings() {
             </ul>
           </div>
 
-          <button className="rune-tab group inline-flex w-full max-w-xs items-center justify-center gap-3 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--gold)_30%,transparent),color-mix(in_oklab,var(--gold)_8%,transparent))] px-8 py-4 text-xs font-mono uppercase tracking-wider text-primary shadow-[0_0_34px_-10px_var(--gold)] hover:shadow-[0_0_44px_-6px_var(--gold)] sm:text-sm">
-            <Copy className="h-4 w-4 transition group-hover:scale-110" />
+          <button
+            onClick={() => {
+              const res = generateCharacterPrompt(appearance, personality, stats?.level || 1);
+              navigator.clipboard.writeText(res.positivePrompt);
+              toast.success(`✨ Character Prompt copied to clipboard! (Lvl ${stats?.level || 1} Mystic Forest)`, {
+                duration: 3000,
+              });
+            }}
+            className="rune-tab group inline-flex w-full max-w-xs items-center justify-center gap-3 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--gold)_34%,transparent),color-mix(in_oklab,var(--gold)_10%,transparent))] px-8 py-4 text-xs font-mono uppercase tracking-wider text-primary shadow-[0_0_34px_-10px_var(--gold)] hover:shadow-[0_0_45px_rgba(223,184,108,0.7)] hover:scale-[1.03] active:scale-95 transition-all duration-150 transform cursor-pointer sm:text-sm"
+          >
+            <Copy className="h-4 w-4 transition duration-300 group-hover:scale-125" />
             Copy Prompt
           </button>
         </section>
 
-        {/* Right: character portrait & avatar editor controls */}
+        {/* Right: character portrait */}
         <aside className="flex flex-col gap-4 lg:sticky lg:top-10">
-          <div className="rune-frame group relative overflow-hidden rounded-2xl border border-primary/40 bg-card/60 p-2 shadow-2xl backdrop-blur-md">
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="rune-frame group relative overflow-hidden rounded-2xl border border-primary/40 bg-card/60 p-2 shadow-2xl backdrop-blur-md cursor-pointer"
+            title="Click to upload new character photo"
+          >
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl">
               <img
                 src={activeAvatar}
@@ -193,18 +330,15 @@ function CharacterSettings() {
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_60%,color-mix(in_oklab,var(--background)_85%,transparent))]" />
 
               {/* Upload Hover Overlay */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 cursor-pointer backdrop-blur-xs"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-primary bg-black/80 text-primary shadow-[0_0_20px_rgba(200,170,110,0.5)]">
-                  <Upload className="h-6 w-6" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 backdrop-blur-xs">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-primary bg-black/80 text-primary shadow-[0_0_24px_rgba(200,170,110,0.6)] group-hover:scale-110 transition duration-300">
+                  <Upload className="h-7 w-7" />
                 </div>
-                <span className="font-display text-xs uppercase tracking-widest text-primary drop-shadow">
-                  Upload Custom Image
+                <span className="font-display text-sm uppercase tracking-widest text-primary drop-shadow">
+                  Upload Custom Photo
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground">
-                  Click to select file
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  Click photo to change picture
                 </span>
               </div>
             </div>
@@ -224,112 +358,6 @@ function CharacterSettings() {
             accept="image/*"
             className="hidden"
           />
-
-          {/* Avatar Toolbar & Presets */}
-          <div className="rounded-xl border border-primary/30 bg-black/70 p-4 backdrop-blur-md flex flex-col gap-3">
-            <div className="flex items-center justify-between font-mono text-[0.65rem] uppercase tracking-[0.2em] text-primary">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5" /> Character Portrait Controls
-              </span>
-              <span className="text-muted-foreground text-[9px] bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                Synced to Main Page
-              </span>
-            </div>
-
-            {/* Quick Action Buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="rune-tab flex items-center justify-center gap-2 border border-primary/40 bg-card/80 px-3 py-2 text-xs font-mono uppercase tracking-wider text-foreground transition hover:border-primary hover:bg-primary/20 hover:text-primary"
-              >
-                <Upload className="h-3.5 w-3.5 text-primary" />
-                Upload Picture
-              </button>
-
-              <button
-                onClick={() => setShowUrlInput(!showUrlInput)}
-                className="rune-tab flex items-center justify-center gap-2 border border-primary/40 bg-card/80 px-3 py-2 text-xs font-mono uppercase tracking-wider text-foreground transition hover:border-primary hover:bg-primary/20 hover:text-primary"
-              >
-                <LinkIcon className="h-3.5 w-3.5 text-primary" />
-                Paste Image URL
-              </button>
-            </div>
-
-            {/* URL Input Form (toggled) */}
-            {showUrlInput && (
-              <form onSubmit={handleUrlSubmit} className="flex gap-2">
-                <input
-                  type="url"
-                  placeholder="https://example.com/character.jpg"
-                  value={tempUrl}
-                  onChange={(e) => setTempUrl(e.target.value)}
-                  className="flex-1 rounded-lg border border-primary/40 bg-background/80 px-3 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="rounded-lg border border-primary/60 bg-primary/20 px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-primary hover:bg-primary/40"
-                >
-                  Save
-                </button>
-              </form>
-            )}
-
-            {/* Preset Avatar Selection */}
-            <div className="flex items-center justify-between pt-1 border-t border-border/40">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                Presets:
-              </span>
-
-              <div className="flex items-center gap-2">
-                {/* Preset 1 */}
-                <button
-                  onClick={() => handleSelectPreset(portrait)}
-                  className={`relative h-10 w-10 overflow-hidden rounded-lg border transition ${
-                    activeAvatar === portrait
-                      ? "border-primary ring-2 ring-primary/50 scale-105"
-                      : "border-primary/30 opacity-70 hover:opacity-100 hover:border-primary"
-                  }`}
-                  title="Verdant Elf Portrait"
-                >
-                  <img src={portrait} alt="Elf" className="h-full w-full object-cover" />
-                  {activeAvatar === portrait && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <Check className="h-4 w-4 text-primary drop-shadow" />
-                    </div>
-                  )}
-                </button>
-
-                {/* Preset 2 */}
-                <button
-                  onClick={() => handleSelectPreset(heroAvatar)}
-                  className={`relative h-10 w-10 overflow-hidden rounded-lg border transition ${
-                    activeAvatar === heroAvatar
-                      ? "border-primary ring-2 ring-primary/50 scale-105"
-                      : "border-primary/30 opacity-70 hover:opacity-100 hover:border-primary"
-                  }`}
-                  title="Ranger Hero"
-                >
-                  <img src={heroAvatar} alt="Ranger" className="h-full w-full object-cover" />
-                  {activeAvatar === heroAvatar && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <Check className="h-4 w-4 text-primary drop-shadow" />
-                    </div>
-                  )}
-                </button>
-
-                {/* Reset button */}
-                {avatarUrl && (
-                  <button
-                    onClick={handleResetAvatar}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-background/50 text-muted-foreground transition hover:border-destructive hover:text-destructive"
-                    title="Reset to Default"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
         </aside>
       </div>
     </main>

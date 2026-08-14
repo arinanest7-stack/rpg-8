@@ -14,6 +14,7 @@ import {
   Edit,
 } from "lucide-react";
 import backdrop from "@/assets/realm-backdrop.jpg";
+import portrait from "@/assets/character-portrait.jpg";
 import { ArcaneOverlay } from "@/components/character/ArcaneOverlay";
 import { WindingPathRoadmap } from "@/components/hub/WindingPathRoadmap";
 import { DailyMissions } from "@/components/hub/DailyMissions";
@@ -53,7 +54,8 @@ const MENU = [
 ];
 
 function JourneyPage() {
-  const { containers, stats, completeStep } = useStudyStore();
+  const { containers, stats, completeStep, avatarUrl } = useStudyStore();
+  const activeAvatar = avatarUrl || portrait;
 
   const [activeStep, setActiveStep] = useState<{
     step: StepData;
@@ -62,17 +64,19 @@ function JourneyPage() {
     topicTitle: string;
   } | null>(null);
 
-  const firstContainer = containers[0];
-  const firstSection = firstContainer?.sections[0];
-  const firstTopic = firstSection?.topics[0] || firstContainer?.topics[0];
+  const [selectedSkillIndex, setSelectedSkillIndex] = useState(0);
 
-  const currentSkillTitle = firstContainer?.title || "VALENCIANO";
-  const currentSectionTitle = firstSection?.title || "LECTURA I COMPRENSIÓ";
-  const currentTopicTitle = firstTopic?.title || "LECTURA I COMPRENSIÓ";
+  const activeContainer = containers[selectedSkillIndex] || containers[0];
+  const firstSection = activeContainer?.sections[0];
+  const firstTopic = firstSection?.topics[0] || activeContainer?.topics[0];
+
+  const currentSkillTitle = activeContainer?.title || "NO SKILLS";
+  const currentSectionTitle = firstSection?.title || activeContainer?.title || "CURRICULUM";
+  const currentTopicTitle = firstTopic?.title || "MAIN MILESTONES";
 
   const pathSteps = firstTopic?.steps || [];
   const completedCount = pathSteps.filter((s) => s.done).length;
-  const totalCount = pathSteps.length > 0 ? pathSteps.length : 5;
+  const totalCount = pathSteps.length;
 
   return (
     <div className="realm-dark relative min-h-screen bg-[#06120b] text-foreground select-none">
@@ -124,6 +128,25 @@ function JourneyPage() {
 
         {/* Center Main Area */}
         <main className="min-w-0 flex-1">
+          {/* Skill Selector Tabs (if multiple containers exist) */}
+          {containers.length > 1 && (
+            <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1">
+              {containers.map((c, idx) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedSkillIndex(idx)}
+                  className={`rounded-xl border px-4 py-2 font-display text-xs uppercase tracking-wider transition ${
+                    selectedSkillIndex === idx
+                      ? "border-primary bg-primary/25 text-primary shadow-[0_0_12px_rgba(200,170,110,0.3)] font-bold"
+                      : "border-border/60 bg-card/60 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                  }`}
+                >
+                  {c.title}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Header Card matching Photo 1 */}
           <div className="rune-frame mb-6 rounded-2xl border border-primary/40 bg-card/70 p-5 backdrop-blur-md">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -134,26 +157,30 @@ function JourneyPage() {
                   <span>➔</span>
                   <span>AREA</span>
                   <span>➔</span>
-                  <span>SKILL</span>
+                  <span>{currentSkillTitle}</span>
                   <span>➔</span>
                   <span className="text-primary">{currentTopicTitle}</span>
                 </div>
                 <h1 className="mt-1 font-display text-2xl font-extrabold uppercase tracking-[0.22em] text-primary drop-shadow-md">
-                  {currentTopicTitle}
+                  {currentSectionTitle}
                 </h1>
               </div>
 
-              {/* Progress counter bar matching Photo 1 (e.g. 2/5) */}
+              {/* Progress counter bar matching Photo 1 */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
                   <div className="h-2.5 w-48 overflow-hidden rounded-full bg-black/80 p-0.5 border border-primary/30">
                     <div className="flex h-full w-full rounded-full overflow-hidden">
-                      <div className="h-full bg-accent transition-all duration-500" style={{ width: "40%" }} />
-                      <div className="h-full bg-primary transition-all duration-500" style={{ width: "20%" }} />
+                      <div
+                        className="h-full bg-accent transition-all duration-500"
+                        style={{
+                          width: totalCount > 0 ? `${(completedCount / totalCount) * 100}%` : "0%",
+                        }}
+                      />
                     </div>
                   </div>
                   <span className="font-mono text-xs font-bold text-muted-foreground">
-                    {completedCount || 2}/{totalCount}
+                    {completedCount}/{totalCount}
                   </span>
                 </div>
 
@@ -185,9 +212,57 @@ function JourneyPage() {
           </div>
         </main>
 
-        {/* Right Rail: Daily Missions & Quest Board */}
-        <aside className="hidden w-80 shrink-0 flex-col gap-6 xl:flex">
+        {/* Right Rail: Daily Missions (Quest Board) & Stats Panel */}
+        <aside className="hidden w-80 shrink-0 flex-col gap-4 xl:flex">
+          {/* Daily Missions Quest Board Box (Above Stats Panel) */}
           <DailyMissions />
+
+          {/* Persistent RPG Stats Panel (Aligned with NEW TOPIC 1 Level) */}
+          <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-black/75 px-3 py-2 shadow-xl backdrop-blur-md">
+            <Link
+              to="/character"
+              className="relative h-8 w-8 overflow-hidden rounded-full border border-primary/60 transition hover:scale-110 hover:border-primary shrink-0 shadow-[0_0_10px_rgba(200,170,110,0.3)]"
+              title="Character Settings & Avatar"
+            >
+              <img src={activeAvatar} alt="Hero Avatar" className="h-full w-full object-cover" />
+            </Link>
+
+            <div className="flex items-center gap-3 font-mono text-[11px] text-muted-foreground">
+              {/* Level */}
+              <div className="flex items-center gap-1" title="Hero Level">
+                <Swords className="h-3.5 w-3.5 text-primary" />
+                <span className="font-bold text-foreground">Lvl {stats?.level || 1}</span>
+              </div>
+
+              {/* XP Bar */}
+              <div className="flex flex-col gap-0.5" title={`XP: ${stats?.xp || 0}/${stats?.xpMax || 100}`}>
+                <div className="flex items-center justify-between gap-1 text-[10px]">
+                  <span className="flex items-center gap-1 text-accent font-semibold">
+                    <Zap className="h-3 w-3 text-accent" />
+                    {stats?.xp || 0} XP
+                  </span>
+                </div>
+                <div className="h-1.5 w-16 overflow-hidden rounded-full bg-black/90 border border-primary/20 p-0.2">
+                  <div
+                    className="h-full bg-accent rounded-full transition-all duration-300 shadow-[0_0_6px_rgba(0,240,181,0.5)]"
+                    style={{ width: `${Math.min(100, Math.max(8, ((stats?.xp || 0) / (stats?.xpMax || 100)) * 100))}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Gold */}
+              <div className="flex items-center gap-1" title="Gold Coins">
+                <Coins className="h-3.5 w-3.5 text-primary" />
+                <span className="font-semibold text-primary">{stats?.gold || 0}G</span>
+              </div>
+
+              {/* Streak */}
+              <div className="flex items-center gap-1" title="Daily Study Streak">
+                <Flame className="h-3.5 w-3.5 text-primary" />
+                <span className="font-semibold text-foreground">{stats?.streak || 0}D</span>
+              </div>
+            </div>
+          </div>
         </aside>
       </div>
 
