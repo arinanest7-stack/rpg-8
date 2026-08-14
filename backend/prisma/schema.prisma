@@ -1,0 +1,95 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  quests     Quest[]
+  characters CharacterProfile[]
+
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  tenantId  String
+  email     String   @unique
+  name      String
+  role      String   @default("USER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  character CharacterProfile?
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model CharacterProfile {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String   @unique
+  heroName   String   @default("Arcane Scholar")
+  title      String   @default("Grand Strategist")
+  avatarUrl  String?
+  level      Int      @default(1)
+  currentXp  Int      @default(0)
+  targetXp   Int      @default(1000)
+  totalGold  Int      @default(250)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("character_profiles")
+}
+
+model Quest {
+  id          String   @id @default(uuid())
+  tenantId    String
+  title       String
+  description String?
+  category    String   @default("Core Lore")
+  difficulty  String   @default("Medium")
+  rewardXp    Int      @default(100)
+  rewardGold  Int      @default(50)
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  steps  Step[]
+
+  @@index([tenantId])
+  @@map("quests")
+}
+
+model Step {
+  id          String   @id @default(uuid())
+  questId     String
+  order       Int
+  title       String
+  description String?
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@map("steps")
+}

@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node dependencies & build outputs
 node_modules
 dist
 dist-ssr
@@ -15,6 +16,12 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.env
+
+# Database local storage
+database/data/
+*.sqlite
+*.db
 
 # Wrangler / Cloudflare
 .wrangler/
