@@ -137,30 +137,19 @@ export function StepEditorModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 backdrop-blur-md p-3 md:p-6 overflow-hidden">
       <div className="rune-frame relative flex w-full max-w-5xl h-[92vh] flex-col rounded-2xl bg-card border border-primary/50 shadow-2xl overflow-hidden">
         {/* Top Header */}
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 bg-background/80 px-6 py-4">
-          <div>
-            {/* Unified Breadcrumbs: Skill -> Section -> Topic -> Step */}
-            <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              <span className="text-primary font-medium">{skillTitle}</span>
-              <span>›</span>
-              <span>{sectionTitle}</span>
-              <span>›</span>
-              <span>{topicTitle}</span>
-              <span>›</span>
-              <span className="text-foreground font-semibold">{currentStep.title}</span>
-            </div>
-
-            <div className="flex items-center gap-3 mt-1">
+        <header className="relative flex flex-wrap items-center justify-between gap-4 border-b border-border/60 bg-background/80 px-6 py-4 pr-16">
+          <div className="flex-1 min-w-0 pr-4">
+            <div className="flex items-center gap-3">
               <input
                 value={currentStep.title}
                 onChange={(e) =>
                   handleUpdateStep({ ...currentStep, title: e.target.value })
                 }
-                className="font-display text-xl uppercase tracking-wider text-foreground bg-transparent border-b border-transparent hover:border-border focus:border-primary focus:outline-none transition px-1 py-0.5"
+                className="w-full font-display text-lg md:text-xl uppercase tracking-wider text-primary bg-transparent border-b border-primary/30 focus:border-primary focus:outline-none transition py-1 leading-snug whitespace-normal break-words"
               />
 
               {autoSavedNotice && (
-                <span className="flex items-center gap-1 font-mono text-[10px] text-xp animate-fade-in">
+                <span className="flex items-center gap-1 font-mono text-[10px] text-xp shrink-0 animate-fade-in">
                   <Check className="h-3 w-3" /> Auto-saved
                 </span>
               )}
@@ -183,15 +172,16 @@ export function StepEditorModal({
               <BookmarkPlus className="h-3.5 w-3.5" />
               <span>Save as Template</span>
             </button>
-
-            <button
-              onClick={onClose}
-              className="rounded-lg border border-border p-2 text-muted-foreground hover:border-destructive hover:text-destructive transition"
-              title="Close editor"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
+
+          {/* Absolute Top Right Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 rounded-full border border-primary/40 bg-black/60 p-2 text-muted-foreground hover:border-primary hover:text-primary transition shadow-md"
+            title="Close editor"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </header>
 
         {/* Step description sub-header */}

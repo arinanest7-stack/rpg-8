@@ -3,6 +3,7 @@ import { Trash2, Plus, GripVertical, Image as ImageIcon, Paperclip, Check } from
 import { SectionBlock, ContentElement, ContentElementType, uid } from "@/lib/templates";
 import { NotionBlockPicker } from "./NotionBlockPicker";
 import { EditableText } from "./EditableText";
+import { FormattedText } from "@/components/ui/FormattedText";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -123,11 +124,20 @@ export function SectionBlockContainer({ block, onChange, onDelete }: Props) {
                 />
               )}
               {el.type === "text" && (
-                <EditableText
-                  value={el.content}
-                  onChange={(v) => updateElement(el.id, { content: v })}
-                  className="text-sm text-foreground/90 leading-relaxed"
-                />
+                <div className="w-full">
+                  <EditableText
+                    value={el.content}
+                    onChange={(v) => updateElement(el.id, { content: v })}
+                    multiline
+                    className="w-full text-sm text-foreground/90 leading-relaxed"
+                  />
+                  <div className="mt-2 rounded-lg border border-primary/20 bg-black/40 p-3">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">
+                      Formatted Preview:
+                    </span>
+                    <FormattedText content={el.content} />
+                  </div>
+                </div>
               )}
               {el.type === "bullet_list" && (
                 <div className="flex items-center gap-2">

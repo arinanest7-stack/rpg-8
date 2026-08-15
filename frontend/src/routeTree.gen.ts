@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AiHubRouteImport } from './routes/ai-hub'
 import { Route as CharacterRouteImport } from './routes/character'
 import { Route as HubRouteImport } from './routes/hub'
 import { Route as JourneyRouteImport } from './routes/journey'
@@ -18,6 +19,11 @@ import { Route as QuestsRouteImport } from './routes/quests'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiHubRoute = AiHubRouteImport.update({
+  id: '/ai-hub',
+  path: '/ai-hub',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CharacterRoute = CharacterRouteImport.update({
@@ -43,6 +49,7 @@ const QuestsRoute = QuestsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-hub': typeof AiHubRoute
   '/character': typeof CharacterRoute
   '/hub': typeof HubRoute
   '/journey': typeof JourneyRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-hub': typeof AiHubRoute
   '/character': typeof CharacterRoute
   '/hub': typeof HubRoute
   '/journey': typeof JourneyRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-hub': typeof AiHubRoute
   '/character': typeof CharacterRoute
   '/hub': typeof HubRoute
   '/journey': typeof JourneyRoute
@@ -65,14 +74,22 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/character' | '/hub' | '/journey' | '/quests'
+  fullPaths: '/' | '/ai-hub' | '/character' | '/hub' | '/journey' | '/quests'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/character' | '/hub' | '/journey' | '/quests'
-  id: '__root__' | '/' | '/character' | '/hub' | '/journey' | '/quests'
+  to: '/' | '/ai-hub' | '/character' | '/hub' | '/journey' | '/quests'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai-hub'
+    | '/character'
+    | '/hub'
+    | '/journey'
+    | '/quests'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiHubRoute: typeof AiHubRoute
   CharacterRoute: typeof CharacterRoute
   HubRoute: typeof HubRoute
   JourneyRoute: typeof JourneyRoute
@@ -86,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-hub': {
+      id: '/ai-hub'
+      path: '/ai-hub'
+      fullPath: '/ai-hub'
+      preLoaderRoute: typeof AiHubRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/character': {
@@ -121,6 +145,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiHubRoute: AiHubRoute,
   CharacterRoute: CharacterRoute,
   HubRoute: HubRoute,
   JourneyRoute: JourneyRoute,

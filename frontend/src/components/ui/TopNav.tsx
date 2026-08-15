@@ -3,7 +3,7 @@ import { Swords, Coins, Flame, Zap } from "lucide-react";
 import { useStudyStore } from "@/hooks/useStudyStore";
 import portrait from "@/assets/character-portrait.jpg";
 
-type ActivePage = "home" | "journey" | "character" | "hub" | "quests";
+type ActivePage = "home" | "journey" | "character" | "hub" | "quests" | "ai-hub";
 
 interface TopNavProps {
   active?: ActivePage;
@@ -15,14 +15,16 @@ const NAV_ITEMS: { id: ActivePage; label: string; to: string }[] = [
   { id: "character", label: "CHARACTER", to: "/character" },
   { id: "hub", label: "PATH MODELER", to: "/hub" },
   { id: "quests", label: "QUESTS", to: "/quests" },
+  { id: "ai-hub", label: "AI HUB", to: "/ai-hub" },
 ];
 
 export function TopNav({ active }: TopNavProps) {
   const { stats, avatarUrl } = useStudyStore();
   const activeAvatar = avatarUrl || portrait;
 
-  // Show stats panel in top right ONLY for character, hub, and quests pages (not journey)
-  const showUpperRightStats = active === "character" || active === "hub" || active === "quests";
+  // Show stats panel in top right ONLY for character, hub, quests, and ai-hub pages (not journey)
+  const showUpperRightStats =
+    active === "character" || active === "hub" || active === "quests" || active === "ai-hub";
 
   return (
     <header className="relative z-20 w-full max-w-7xl mx-auto px-4 pt-6 pb-2 flex flex-col md:flex-row items-center justify-between gap-4 select-none">

@@ -200,6 +200,7 @@ function JourneyPage() {
           <div className="rune-frame rounded-2xl border border-primary/30 bg-card/40 backdrop-blur-md min-h-[640px]">
             <WindingPathRoadmap
               steps={pathSteps}
+              sectionTitle={currentSectionTitle}
               onNodeClick={(step) => {
                 setActiveStep({
                   step,

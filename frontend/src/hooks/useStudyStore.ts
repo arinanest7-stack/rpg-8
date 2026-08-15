@@ -20,12 +20,15 @@ export interface TopicData {
 export interface SectionData {
   id: string;
   title: string;
+  target?: string;
+  detailedOverviewAndScope?: string;
   topics: TopicData[];
 }
 
 export interface ContainerData {
   id: string;
   title: string;
+  description?: string;
   mode: "with_sections" | "simple";
   sections: SectionData[];
   topics: TopicData[];
@@ -174,48 +177,20 @@ const defaultContainers: ContainerData[] = [
   {
     id: "c-1",
     title: "Valenciano — Core",
+    description: "Master language basics and comprehension",
     mode: "with_sections",
     sections: [
       {
         id: "sec-1",
         title: "Reading & Comprehension",
+        target: "Understand key texts and grammar",
+        detailedOverviewAndScope: "Core reading and syntax rules",
         topics: [
           {
             id: "top-1",
             title: "Text Analysis",
             status: "sent",
             steps: createDefaultSteps(),
-          },
-        ],
-      },
-      {
-        id: "sec-2",
-        title: "Advanced Grammar",
-        topics: [
-          {
-            id: "top-2",
-            title: "Verb Conjugations",
-            status: "not_sent",
-            steps: [
-              {
-                id: uid(),
-                title: "Theory Notes",
-                desc: "Subjunctive vs Indicative rules",
-                done: false,
-                xpReward: 25,
-                goldReward: 5,
-                blocks: [],
-              },
-              {
-                id: uid(),
-                title: "Guided Exercises",
-                desc: "Verb conjugation practice",
-                done: false,
-                xpReward: 25,
-                goldReward: 5,
-                blocks: [],
-              },
-            ],
           },
         ],
       },
